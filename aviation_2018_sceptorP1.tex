@@ -1,0 +1,599 @@
+
+\documentclass[]{aiaa-tc}% insert '[draft]' option to show overfull boxes
+
+\usepackage{amsmath}
+ \usepackage{varioref}%  smart page, figure, table, and equation referencing
+ \usepackage{wrapfig}%   wrap figures/tables in text (i.e., Di Vinci style)
+ \usepackage{threeparttable}% tables with footnotes
+ \usepackage{dcolumn}%   decimal-aligned tabular math columns
+  \newcolumntype{d}{D{.}{.}{-1}}
+ \usepackage{nomencl}%   nomenclature generation via makeindex
+  \makenomenclature
+ \usepackage{subfigure}% subcaptions for subfigures
+ \usepackage{subfigmat}% matrices of similar subfigures, aka small mulitples
+ \usepackage{fancyvrb}%  extended verbatim environments
+  \fvset{fontsize=\footnotesize,xleftmargin=2em}
+ \usepackage{lettrine}%  dropped capital letter at beginning of paragraph
+ \usepackage[dvips]{dropping}% alternative dropped capital package
+ \usepackage[colorlinks,filecolor=black,citecolor=black,linkcolor=black]{hyperref}%  hyperlinks [must be loaded after dropping]
+ \usepackage{graphicx}
+ \usepackage[section]{placeins}
+ \usepackage{tikz}
+ \usepackage{threeparttable}
+%\usepackage{ltxtable}
+\usepackage{multicol}
+\usepackage{float}
+\usepackage{gensymb}
+\usepackage{minted}
+
+ 
+\usepackage[nocomma]{optidef}
+\usepackage{color, colortbl}
+\definecolor{Gray}{gray}{0.9}
+\definecolor{LightCyan}{rgb}{0.88,1,1}
+
+% \usepackage[printwatermark]{xwatermark}
+% % \newwatermark*[allpages,opactiy=0.3,color=red!50,angle=45,scale=3,xpos=0,ypos=0]{DRAFT}
+% \newsavebox\mybox
+% \savebox\mybox{\tikz[color=red,opacity=0.15]\node{DRAFT};}
+% \newwatermark*[allpages, angle=45, scale=10, xpos=-20,ypos=15]{\usebox\mybox}
+
+\setlength{\belowcaptionskip}{-5pt}
+\setlength{\abovecaptionskip}{-5pt}
+
+% \usepackage{draftwatermark}
+% \SetWatermarkText{Draft}
+% \SetWatermarkScale{8}
+
+% Allow align to span pages
+\allowdisplaybreaks
+
+ \title{Battery Performance Modeling on Maxwell X-57}
+
+ \author{
+  Jeffrey C. Chin,\thanks{Propulsion Systems Analysis Branch, jeffrey.c.chin@nasa.gov, AIAA Member.} \
+  Sydney L. Schnulo,\thanks{Propulsion Systems Analysis Branch, sydney.l.schnulo@nasa.gov, AIAA Member.} \
+  Thomas B. Miller,\thanks{Electrochemical Systems Branch, thomas.b.miller@nasa.gov, AIAA Member.} \\
+  Kevin Prokopius,\thanks{Aerospace Engineer, Vantage Partners LLC, Brookpark OH, kevin.prokopius@nasa.gov AIAA Member.} \
+  and Andrew D. Smith,\thanks{Aerospace Engineer, Vantage Partners LLC, Brookpark OH, andrew.d.smith-1@nasa.gov AIAA Member.} \\
+  {\normalsize \itshape NASA Glenn Research Center, Cleveland, OH, 44135, U.S.A.} }
+
+ % Data used by 'handcarry' option
+ \AIAApapernumber{2017}
+ \AIAAconference{AIAA Aviation, June 5-9, Atlanta GA}
+ \AIAAcopyright{\AIAAcopyrightD{YEAR}}
+
+ % Define commands to assure consistent treatment throughout document
+ \newcommand{\eqnref}[1]{(\ref{#1})}
+ \newcommand{\class}[1]{\texttt{#1}}
+ \newcommand{\package}[1]{\texttt{#1}}
+ \newcommand{\file}[1]{\texttt{#1}}
+ \newcommand{\BibTeX}{\textsc{Bib}\TeX}
+ 
+ % Change the spacing before/after equations
+ \expandafter\def\expandafter\normalsize\expandafter{%
+    \normalsize
+    %\setlength\abovedisplayskip{10pt}
+    \setlength\belowdisplayskip{20pt}
+    %\setlength\abovedisplayshortskip{10pt}
+    \setlength\belowdisplayshortskip{20pt}
+}
+
+ % Spacing between equations
+\setlength{\jot}{10pt}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+Accurate battery thermal estimation, state of charge (SOC), and voltage response are essential for mission planning of battery powered electric aircraft. Numerous works exist \cite{Hu} \textsuperscript{,} \cite{Hu2}\textsuperscript{,} \cite{Fotouhi} that outline simulation of lithium-ion battery cells with thermal considerations, so this paper serves to expand the experimentally validated regime into higher temperatures and for Li-ion batteries in the 18650 form factor. The work compares various battery modeling methods with operational and thermal conditions unique to aircraft. The optimization technique used to fit equivalent circuit model parameters to experimental data is also comprehensively detailed in this report, with thermal conditions matched to the X-57 aircraft configuration. A comparison between various generic battery models over transient profiles is then summarized.
+
+Conflicting requirements for managing vehicle weight, battery temperature, vehicle interior temperature, and battery pre-flight conditioning preclude either an active thermal management system or the complete thermal isolation of the modules from the rest of the vehicle. Therefore, high-fidelity models of the battery and fuselage were developed to precisely track in-flight temperature profiles and design ground pre-conditioning cooling.
+
+\end{abstract}
+
+%\printnomenclature% creates nomenclature section produced by MakeIndex
+
+%\include{Nomenclature}
+\section{Nomenclature}
+
+\begin{multicols}{2}
+ \begin{tabbing}
+  XXXXXX \= XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \= \kill % first line sets tab stop
+  %Term \> Description \> Units \\
+  
+  $A$ \> cross sectional Area $(m^{2})$ \\
+  $\alpha$ \> thermal diffusivity $(\frac{m^{2}}{s})$\\
+  $C_p$ \> specific heat $(\frac{J}{K})$\\
+  $D$ \> diameter $(m)$\\
+  $\eta_{pack}$ \> pack efficiency \\
+  $P_{r}$ \> Prandtl Number \\
+  $R_{e}$ \> Reynolds Number \\
+  $\gamma_a$ \> atmospheric ratio of specific heats \\
+  $\dot{Q}$ \> heat transfer rate $(\frac{W}{s})$ \\
+  $R_{0}$ \> Internal Resistance $(\Omega)$ \\
+  $R_{Th}$ \> Thevenin Resistanc $(\Omega)$ \\
+  $C_{Th}$ \> Thevenin Polarization Capacitance $(F)$ \\
+  $U_{oc}$ \> Open Circuit Voltage $(V)$ \\
+  $U_{L}$ \> Terminal Voltage $(V)$ \\
+  $I_{L}$ \> Line Current $(A)$ \\
+  $P$ \> Power $(kW)$ \\
+  $SOC$ \> State of Charge \\
+  $T$ \> Temperature $(K)$\\
+  $Q$\> Battery capacity $(Ah)$\\
+
+ \end{tabbing}
+\end{multicols}
+\newpage
+
+\nomenclature{\beta}{test}
+
+\section{Introduction}
+
+Modeling of lithium ion batteries is challenging due to their multivariate non-linearity. In particular, the time dependent state of charge, temperature, and discharge rate all impact the battery performance. Battery modeling can be categorized into three main approaches: electrochemical, mathematical, and electrical. A blend between the electrical and mathematical model is chosen in this application due to it's fast execution speed, and relatively prediction accuracy for SOC, open-circuit voltage (OCV), temperature and terminal voltage.
+
+\begin{figure}[!htb]% order of placement preference: here, top, bottom
+	\centering
+	\includegraphics[width=0.5\textwidth]{figures/X57_mod2.png}\includegraphics[width=0.5\textwidth]{figures/batt_loc.png}
+	\caption{(Left) NASA's X-57 ``Maxwell'' aircraft, modification \#2 variant
+	(Right) Transparent fuselage view depicting battery location and configuration into 16 cell blocks}
+	\label{fig:X57}
+\end{figure}
+
+Modeling batteries in the context of an experimental aircraft is different than previous works on ground-based electric vehicles due to more stringent weight requirements that push the thermal design solution to be as minimal as possible. An aircraft mission and power demand places a greater emphasis on capturing variations in OCV and internal resistance over capturing exact transient responses. Figure \ref{fig:X57} shows the X-57 Mod2 vehicle design and battery placement within the fuselage. 
+
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+ \multicolumn{1}{|c|}{\textbf{property}} &
+\multicolumn{1}{c|}{\textbf{value}} & 
+\multicolumn{1}{c|}{\textbf{units}}\\ 
+\hline
+\rowcolor{LightCyan}
+specific heat   & 0.83 & J/gram-\degree C \\
+cell mass   & 48 & grams\\
+\rowcolor{LightCyan}
+discharge temp limits & -20 to 75 & \degree C \\
+max discharge rate   & 15 &  Amps\\
+\rowcolor{LightCyan}
+max mission discharge & 9 & Amps\\
+nominal voltage & 3.6 & Volts \\
+\rowcolor{LightCyan}
+nominal capacity & 3 & Amp-h\\
+\hline
+total pack mass & 350 & kg\\
+\rowcolor{LightCyan}
+pack energy density & 150 & Wh/kg\\
+vehicle weight (w/o batteries) & 996 & kg\\
+\rowcolor{LightCyan}
+min pack voltage & 330 & Volts\\
+max power draw & 120 & kW\\
+\rowcolor{LightCyan}
+sub-module config & 32sx10p & $\#$ of cells\\
+pack config & 4sx4p & $\#$ of modules\\
+\hline
+\end{tabular}
+\end{center}
+\label{tab:18650batt}
+\caption{X-57 Battery Properties}
+\end{table}
+
+Each sub-module is comprised of 320 cylindrical 18650 cells developed by Samsung (SDI 18650-30Q) and contained within a solid block of aluminum with cores drilled for each individual cell. This solid pack body serves to contain a cell thermal runaway event by absorbing and spreading the heat sufficiently, with a central blow-off vent to release pressure in the event of a cell failure.
+
+\begin{figure}[!htb]% order of placement preference: here, top, bottom
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/pallet.png}\includegraphics[width=0.25\textwidth]{figures/block.png}
+	\caption{Transparent fuselage view depicting battery location and configuration into 16 cell blocks}
+	\label{fig:pallet}
+\end{figure}
+
+
+\section{Battery Loss Modeling}
+
+\subsection{Equivalent Circuit Model}
+
+In order to capture transient voltage effects, non-linear capacity and thermal effects within the battery and subsequent components, a model is required to simulate battery internal resistance and voltage as a function of current draw, SOC, and battery temperature. 
+Existing models for Lithium Ion batteries are explored in detail in multiple studies \cite{Huria}, \cite{Hongwen}. These models are composed of equivalent circuit models of varying complexity. The single RC block Thevenin model was identified as the ideal model for this application due to its simplicity and data availability, while still being able to capture transient effects and track state of charge within 2\% accuracy of experimental data. This model ---shown in Figure \ref{fig:thevenin}--- is composed of a voltage source, an internal resistance, and a parallel resistor-capacitor (RC) block to capture polarization effects. 
+
+\begin{figure}[!htb]% order of placement preference: here, top, bottom
+	\centering
+	\includegraphics[width=0.5\textwidth]{figures/thevenin.png}
+	\caption{Thevenin equivalent circuit model of a battery containing a transient RC block.}
+	\label{fig:thevenin}
+\end{figure}
+
+The values of each of these circuit components are interpolated from performance maps as a function of the state of charge and current temperature,
+
+\begin{align}
+U_{oc},C_{Th},R_0,R_{Th} &= f(SOC, T_{batt}) \label{eq:thev1}
+\end{align}
+%
+Subscripts $oc$, $Th$ and $L$ in Figure \ref{fig:thevenin} and Equation \ref{eq:thev1} refer to open circuit, Thevenin and line, respectively. The Thevenin voltage $U_{Th}$, battery state of charge $SOC$ and battery temperature $T_{batt}$ are treated as integrated states over the course of the simulation, subject to the following differential equations \cite{Hongwen}:
+
+
+
+Where $Q_{max}$ is the capacity of a single cell, which is 3 $Ah$ in our model.  Each of the aircraft's two battery packs are arranged with 128 cells in series ($n_{series}$), and 40 in parallel ($n_{parallel}$).  The line voltage is computed from the open circuit and Thevenin voltage as:
+
+\begin{align}
+U_L = U_{oc} - U_{Th} - I_L R_0 \label{eq:U_L} \\
+\dot{U_{Th}} = \frac{I-\frac{U_{Th}}{R_{Th}}}{C_1}\\
+\dot{SOC} = -\frac{1}{3600*Q_{max}}I
+\end{align}
+
+The electric properties of the battery pack are then:
+
+\begin{align}
+I_{pack} &= I_L \cdot n_{parallel} \label{eq:I_pack} \\
+U_{pack} &= U_L \cdot n_{series} \label{eq:U_pack} \\
+P_{pack} &= I_{pack} \cdot U_{pack} \eta_{pack} - P_{aux} \label{eq:P_pack}
+\end{align}
+
+
+%
+The battery model is then integrated into a full aircraft model based on a demanded power driven by the overall vehicle equations of motion and propulsion models. 
+A Newton solver is used to find the current load on a single cell ($I_L$) such that the power output back the battery pack is equal to the demanded power after all the efficiency knockdowns and transient responses:
+
+\begin{align}
+\mathcal{R}(I_L) &= P_{out-battery} - P_{pack} \label{eq:resid_I_L}
+\end{align}
+%
+The battery output power is determined by reducing the requested motor input power by the efficiency of the wire and inverter.  Using this model, the heat output of the battery and voltage of the batteries can be accurately tracked. The battery model also dictates the current and voltage levels supplied to the other electric components, which is critical for estimating their thermal loads.
+
+% \begin{figure}[!htb]% order of placement preference: here, top, bottom
+% 	\centering
+% 	\includegraphics[width=0.5\textwidth]{figures/python.png}
+% 	\caption{}
+% 	\label{fig:python}
+% \end{figure}
+
+\section{Model Parameter Extraction Using Cell Characterization}
+
+A combination of battery testing and modeling will be done to distill the characteristics of the lithium ion cells that make up the battery packs into a series of performance maps. Since the Thevenin equivalent circuit variable values ($R_{0}$, $R_{Th}$, $C_{Th}$, and $U_{oc}$) are a function of state of charge and temperature, a series of tests will be done on individual cells at different temperatures, and the data collected in these experiments will be used to extract the values of open circuit voltage source ($U_{oc}$), internal resistance ($R_{0}$), and the parallel RC ($C_{Th}$, $R_{Th}$) block. The model will be adaptable to different cell chemistry and configurations, assuming performance data at the cell level is available.
+
+
+
+\subsection{Battery Cell Test Setup and Data Collection}
+
+Cell tests were performed using an Arbin BT-2000. Data was collected every 60 seconds during rest periods, and at a rate of 2 samples/second during current pulses. Total test elapsed time, step pulse time, step index, current, voltage, discharge energy, and two temperature readings were recorded at each sample. 
+
+\begin{figure}[!htb]% order of placement preference: here, top, bottom
+	\centering
+	\includegraphics[width=0.5\textwidth]{figures/chamber.png}\includegraphics[width=0.5\textwidth]{figures/experiment_diagram.png}
+	\caption{Experimental battery characterization data acquisition test setup.}
+	\label{fig:exp}
+\end{figure}
+
+Test Procedure:
+\begin{enumerate}
+\item Perform cell wake-up cycles and charge:
+    \begin{itemize}
+        \item C/2 Charge @ 20C
+        \item CV Taper @ 20C to C/20 (0.15A)
+    \end{itemize}
+\item Turn on temperature chamber and allow air and cells stabilize to the specified chamber temperature for 2 hours. Start data acquisition.
+\item  Begin discharging cells at the rates specified in the test matrix for a pulse duration of 2 minutes.
+\item Allow cells to return to specified chamber temperature for 20 minutes.
+\item If the temperature sensor shows that cell temperature increases more than 2 degrees, terminate the test.
+\item Repeat steps 3-5 until batteries are depleted.
+\item C/2 charge to $20\%$ SOC (0.6Ah)
+\item Remove used cells and repeat with 4 new cells at the next temperature step.
+\end{enumerate}
+
+
+
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+ \multicolumn{1}{|c|}{\textbf{Test Number}} &
+ \multicolumn{1}{c|}{\textbf{Temperature}} & 
+ \multicolumn{1}{c|}{\textbf{Cell Discharge Rates}} &
+ \multicolumn{1}{c|}{\textbf{Cells per test}} \\ 
+\hline
+\rowcolor{LightCyan}
+1  & 0$^\circ$C & 0.8C, 1C, 2C & 3 \\
+2  & 20$^\circ$C & 0.8C, 1C, 2C & 3 \\
+\rowcolor{LightCyan}
+3  & 30$^\circ$C & 0.8C, 1C, 2C & 3 \\
+4  & 45$^\circ$C & 0.8C, 1C, 2C & 3 \\
+\rowcolor{LightCyan}
+5  & 60$^\circ$C & 1C & 6 \\
+
+\hline
+\end{tabular}
+\end{center}
+\label{tab:battTestM}
+\caption{Test Matrix}
+\end{table}
+
+
+The cells are placed in a temperature controlled chamber and outfitted with a thermocouple, as shown in Figure 4. Each temperature and discharge test combination is conducted on three lithium-ion cells. Multiple batteries were tested under identical conditions to quantify variations between cells, and the 60C test was performed on six cells, three new cells and three previously used cells to compare the effects of aging. Long pauses between pulses ensured the cells stay near a constant temperature. This procedure allows equivalent circuit parameters to be fit based on the pulse transients for 5 different temperatures and 30 different states of charge. Each of these pulses is used to compute 4 battery parameters to cover all the possible battery conditions it may see in flight. 
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=0.75\textwidth]{figures/Batt_Char.png}
+	\caption{Characterization from current pulse}
+	\label{fig:BattChar}
+\end{figure}
+
+In Figure \ref{fig:BattChar} a sample voltage response is shown with annotations showing how each circuit characteristic is derived. Before each pulse, the voltage is steady at the OCV point corresponding to the SOC. During the current pulse, the voltage drops rapidly by a distance $\Delta V_{0}$ corresponding to the product of $R_{0}*I$. The subsequent logarithmic transient is then defined by the Thevenin resistance and capacitance. The non-linear return to the next OCV has a time constant equal to $R_{Th}*C_{Th}$, which is equal in magnitude to the time in seconds it takes to return 63.2\% or $(1-\frac{1}{e})$ of $\Delta V_{Th}$. This parameter extraction is repeated for every pulse corresponding to a different SOC.
+
+
+\section{Parameter Extraction}
+
+\subsection{Modeling Approach to Parameter Extraction}
+
+After the series of battery tests, the collected battery discharge data is input into a model which uses a least squared optimization to characterize the cells, matching computes values to measured values. The experimental current discharge curve for each temperature will be input into the parameter extraction model. Internal resistance ($R_{0}$), Thevenin resistance ($R_{Th}$), Thevenin capacitance ($C_{Th}$ ), and open circuit voltage ($U_{oc}$) will be found using a solver until the model computed voltage and the experimental voltage data match. The model computes each variable across the state of charge profile until the least squared regression minimizing the difference between experimental and computed voltages are satisfied. This computation yields a series of lookup tables which allow the battery model to interpolate $R_{0}$, $R_{Th}$, $C_{Th}$, and $U_{oc}$ as a function of battery state of charge and temperature. 
+
+By separating the data into individual pulses, this process can be reduced to a linear algebra least squares problem as written:
+
+\[
+\dot{x} = Ax+bu \\
+x = 
+\begin{bmatrix}
+    SOC \\
+    U_{Th} \\
+    U_{Th} \\
+\end{bmatrix}
+\\
+\dot{x} = 
+\begin{bmatrix}
+    SOC \\
+    U_{1} \\
+    U_{2} \\
+\end{bmatrix}
+=
+\begin{bmatrix}
+    0 & 0 & 0 \\
+    0 & \frac{-1}{R_{1}C_{1}} & 0 \\
+   0 & 0 & \frac{-1}{R_{2}C_{2}} \\
+\end{bmatrix}
+\begin{bmatrix}
+    SOC \\
+    U_{1} \\
+    U_{2} \\
+\end{bmatrix}
++
+\begin{bmatrix}
+    \frac{-1}{\alpha} \\
+    \frac{1}{C_{1}} \\
+    \frac{1}{C_{2}} \\
+\end{bmatrix}
+\]
+
+\[
+y = Cx + Du = 
+\begin{bmatrix}
+    \alpha & -1 & -1
+\end{bmatrix}
+\begin{bmatrix}
+    SOC \\
+    U_{1} \\
+    U_{2} \\
+\end{bmatrix}
++
+\begin{bmatrix}
+    -R_{s}
+\end{bmatrix}
+I
+\]
+
+
+\begin{align}
+    \tau = R_{Th}C_{Th} \\
+    V_{1}(t_{charge}) = R_{1}*I_{0}*(1-e^{\frac{-t}{\tau}})\\
+    V_{1}(t_{discharge}) = R_{1}*I_{0}*(1-e^{\frac{-a}{\tau}})e^{\frac{t-a}{\tau}}
+\end{align}
+
+
+\[
+\begin{bmatrix}
+    y[k+1] \\
+    y[k+2] \\ 
+    \vdots \\
+    y[k+m] \\
+\end{bmatrix}
+=
+\begin{bmatrix}
+    y[k] & I[k] & I[k+1] \\
+    y[k+1] & I[k+1] & I[k+1] \\
+    \vdots  & \vdots  & \vdots \\
+    y[k+m-1] & \hdotsfor{3} & I[k+m] \\
+\end{bmatrix}
+\begin{bmatrix}
+    \alpha_{0} \\
+    b_{1} \\
+    b_{2} \\
+\end{bmatrix}
+\]
+
+
+
+% \begin{figure}[!htb]
+% 	\centering
+% 	\includegraphics[width=0.5\textwidth]{figures/paramEstimation.png}
+% 	\caption{Paramter Estimation Solver Loop}
+% 	\label{fig:paramEst}
+% \end{figure}
+
+
+Depending on the current draw and temperature, the duration of each experiment is variable. Maps are calculated by creating n breakpoints to match n pulses, equally spaced from 1 to the lowest SOC. In post-processing, all maps are re-interpolated to a consistent number of breakpoints from 0 to 1. This allows a single dense 2-dimensional table to be created across a range of temperatures and charge levels.
+
+
+\subsection{Results}
+
+By creating an electrical model to mimic the cell response, it is designed to handle any arbitrary current draw. Therefore as expected, there was no significant difference in accuracy between different discharge levels. As a check for cell manufacturing consistency, it was also found that there was insignificant difference between cell performance exposed to the same testing conditions. Variation between temperatures is largely resistance. The capacitance and voltage parameters didn't change significantly between temperature and discharge rate tests, beyond 20 degrees C.
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=0.5\textwidth]{figures/1_1o2C_20C.png}\includegraphics[width=0.5\textwidth]{figures/0_20C.png}
+	\caption{(Left) Model versus test data at two different discharge rates. Red - 1.2C model, Green - 1.2C test, Orange 1C model, Blue 1C test, shows the same model working regardless of discharge rate. (Right) Blue 0C, Orange 20C shows difference in performance at different temperatures}
+	\label{fig:paramE}
+\end{figure}
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=1.0\textwidth]{figures/All_Temp.png}
+	\caption{0-Blue, Green-20, Yellow- 30, Red-45}
+	\label{fig:AllTemp}
+\end{figure}
+
+
+
+The aging of the cells was found to have a noticeable effect on voltage levels at lower SOC as depicted below. To compensate aging a separate scaling factor on the table can be applied. However, experimentally validating the aging model was beyond the scope of this study.
+
+The following graph shows the variation of each parameter.
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=1.0\textwidth]{figures/maps.png}
+	\caption{Parameter variation with temperature and SOC}
+	\label{fig:Map}
+\end{figure}
+
+Applying these new battery characteristics to a full vehicle model of X-57 resulted in a decrease in expected vehicle performance over the previously assumed prismatic cell data. The notional mission profile shown below depicts the reducting in cruise time of the vehicle.
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=1.0\textwidth]{figures/batt_mission.png}
+	\caption{Impact in performance at th vehicle level, compared to baseline maps}
+	\label{fig:Mission}
+\end{figure}
+
+
+
+\section{Pre/Post Flight Cooling}
+
+X57 mod II pre-flight CONOPS require that the battery be cooled from an initial state of 60$^\circ$C down to 10$^\circ$C in situ – as removal from the vehicle between test flights is impractical.  A 24-ton commercial aviation air conditioning unit (ACU) was selected for this task.  While dramatically oversized for a light aircraft, the ACU effectiveness will be constrained by the poor convective interface at the battery modules. A range of cooling scenarios were considered – differing in their effective ACU outlet temperatures and degree of mixing or local (flat plate) forced air speed. 
+
+
+A preliminary analysis treats the battery and aircraft as lumped capacitances coupled through a weak convection interface. This assumption permits rapid permutation of cabin cooling configurations before committing time and resources to a high-fidelity model.  Within the model, each module is characterized by its bulk properties (mass, specific heat), temperature, surface area, and characteristic length. 
+
+These basic battery dimensions and bulk properties contribute to a simplified ‘flat plate’ model of the module surface – where the rate of convective heat transfer between the module and the cabin environment is proportional to surface area (A) and temperature drop across the interface (Tb-T0):
+
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+ \multicolumn{1}{|c|}{\textbf{Preconditioning Method}} &
+\multicolumn{1}{c|}{\textbf{H per Brick}} & 
+\multicolumn{1}{c|}{\textbf{Time to 10}} &
+\multicolumn{1}{c|}{\textbf{Time to 10}} \\ 
+\hline
+\rowcolor{LightCyan}
+Free Convection  & 0.1-0.3  & 30-140 minutes & 16-80 hrs \\
+Good Diffusion + Mixing   & 2 & 5 hrs & 2.5 \\
+\rowcolor{LightCyan}
+Forced Air Across Modules  & 30 & 0.3 hrs & 0.2\\
+\hline
+\end{tabular}
+\end{center}
+\label{tab:batt}
+\caption{Cooling Times}
+\end{table}
+
+A general outline of preconditioning scenarios was generated form the flat plate battery convection model.  The scenarios represent three typical design points.  The first (and most pessimistic) is a worst case design, where cold air from the ACU is diffused into the vehicle cabin, but at such a low volumetric rate that the modules remain in a free convection state.  The second scenario assumes moderate mixing within the vehicle – either the result of imperfect diffusion from the ACU outlet, or driven by a recirculation fan.  The third scenario represents an ‘advanced’ air cooled design, with purpose-built ductwork directing the cold ACU air into a flat jet impinging on each module interface.  
+The effectiveness of the battery preconditioning, as measured by cool-down time (to 10 C) is sensitive to the temperature of the cold air supplied by the ACU, but perhaps more importantly the degree of mixing and forced convection over the modules. 
+
+
+\begin{figure}[!htb]% order of placement preference: here, top, bottom
+	\centering
+	\includegraphics[width=1.0\textwidth]{figures/batt_cooling.png}
+	\caption{Battery temperature during ground cooling for multiple scenarios}
+	\label{fig:coolingTime}
+\end{figure}
+
+\section{In-Flight Thermal Modeling}
+
+% \begin{figure}[!htb]% order of placement preference: here, top, bottom
+% 	\centering
+% 	\includegraphics[width=0.75\textwidth]{figures/FuselageAnsys.png}
+% 	\caption{Fuselage volume temperature model including air streamlines}
+% 	\label{fig:Fuselage}
+% \end{figure}
+
+A COMSOL and ANSYS model are being developed to track airflow through the fuselage and determines an ambient air temperature for a separate battery pack COMSOL thermal model.
+
+ \begin{equation}
+Q_{conv} = h_{c}*A(t_{b}-t_{0})
+\label{eq:Qconv}
+\end{equation}
+
+
+The convective heat transfer coefficient hc varies depending on the cooling scenario – for air-cooled configurations it is on the order of $~1 \frac{W}{m^{2} -^{\circ} C}$ for stagnant conditions (free convection) and as high as 450 $\frac{W}{m^{2} -^{\circ} C}$ for forced-air.  Higher hc values can be computed from the characteristic surface average Nusselt number, Nu: 
+ 
+ \begin{equation}
+Nu_{LC} = 0.37*Re_{Lc}^{0.8}*Pr^{0.33}
+\label{eq:Nu}
+\end{equation}
+
+
+Where $Re-{Lc}$ is the flat plate Reynolds number, and Pr is the Prandtl number of the surrounding air. The flat plate method was selected because each module ‘brick’ assembly (corresponding to ~1/2 of a module’s cells and support structure) is effectively isolated from its partner. The largest free surface is assumed to account for the majority of convective heat transfer to the vehicle interior. For the mod II vehicle’s battery, each convection surface 
+
+
+\section{Conclusions and Future Work}
+
+Various figures of merit were used to compare a purely mathematical battery modeling method to hybrid electrical-analytical model. The parameters necessary for the equivalent circuit model were experimentally derived using the described test procedures and optimization routine. The error in each type of model was quantified for a range of transient profiles and operating temperatures. The purely analytical model provides a more generic tool set, that can be more readily defined using manufacturer's specification data. The electrical model is able to capture a higher degree of transient behavior over a range of charge levels, which becomes increasingly critical for transients involving many throttle changes. Both methods can be used interchangeably as the basis for pack level calculations and vehicle level models, depending on the designer's needs.
+
+
+\section{Acknowledgements}
+
+The authors would like to thank the rest of the X-57 team, the battery team, and the Electric Power Systems for their collaboration. Additional thanks to the NASA Flight Demonstration and Capabilities Project for sponsoring this work.
+
+% produces the bibliography section when processed by BibTeX
+
+\bibliography{bibtex_database}
+\bibliographystyle{aiaa}
+
+\pagebreak
+The code repository can be found at:
+\url{https://developer.nasa.gov/x57/x57_mpt}
+\input{figures/code/battery_maps.tex}
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=1.0\textwidth]{figures/Test_Matrix.png}
+	\caption{Test Matrix}
+	\label{fig:TestMatrix}
+\end{figure}
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=1.0\textwidth]{figures/Test1Summary.png}
+	\caption{Test 1 Summary}
+	\label{fig:Test1Summary}
+\end{figure}
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=1.0\textwidth]{figures/Test2Summary.png}
+	\caption{Test 2 Summary}
+	\label{fig:Test2Summary}
+\end{figure}
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=1.0\textwidth]{figures/Test3Summary.png}
+	\caption{Test 3 Summary}
+	\label{fig:Test3Summary}
+\end{figure}
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=1.0\textwidth]{figures/Test4Summary.png}
+	\caption{Test 4 Summary}
+	\label{fig:Test4Summary}
+\end{figure}
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=1.0\textwidth]{figures/SampleTest.png}
+	\caption{Test 4 Summary}
+	\label{fig:Test4Summary}
+\end{figure}
+
+\end{document}
+
+% - Release $Name:  $ -
